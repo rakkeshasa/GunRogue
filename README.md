@@ -215,4 +215,60 @@ private void DrawRoomConnections()
 노드에 있는 자식 노드 리스트를 순회하며 연결할 노드를 확인하고 선을 연결합니다.</br>
 이때, 노드간 부모-자식 관계를 나타내기위해 방향이 있는 선을 구현했습니다.</br>
 
+```
+private void DrawConnectionLine(RoomNodeSO parentRoomNode, RoomNodeSO childRoomNode)
+{
+    Vector2 midPosition = (endPosition + startPosition) / 2f;
+    Vector2 direction = endPosition - startPosition;
+
+    Vector2 arrowTailPoint1 = midPosition - new Vector2(-direction.y, direction.x).normalized * connectingLineArrowSize;
+    Vector2 arrowTailPoint2 = midPosition + new Vector2(-direction.y, direction.x).normalized * connectingLineArrowSize;
+    Vector2 arrowHeadPoint = midPosition + direction.normalized * connectingLineArrowSize;
+
+    Handles.DrawBezier(arrowHeadPoint, arrowTailPoint1, arrowHeadPoint, arrowTailPoint1, Color.white, null, connectingLineWidth);
+    Handles.DrawBezier(arrowHeadPoint, arrowTailPoint2, arrowHeadPoint, arrowTailPoint2, Color.white, null, connectingLineWidth);
+}
+```
+
+![math](https://github.com/user-attachments/assets/6fb5b304-6a5e-4cec-89e5-95d72779676e)
+</br>
+연결된 두 노드에서 선을 끌어온 노드가 부모 노드가 되고 새롭게 선을 놓은 노드를 자식 노드로 두어 벡터를 구했습니다.</br>
+화살표를 나타내기 위해 벡터로 부터 수직인 직교 벡터를 구하기 위해 회전 행렬을 이용해 화살표의 좌표를 구해준 뒤 선을 그려 화살표를 구현했습니다.</br></br>
+
+방 노드를 잘못 두어 삭제해야할 경우 해당 노드와 연결된 노드들을 리스트에서 탐색해 삭제하고 안전하게 노드가 삭제될 수 있도록 했습니다.</br>
+
+```
+private void DeleteSelectedRoomNodes()
+{
+    foreach(RoomNodeSO roomNode in currentRoomNodeGraph.roomNodeList)
+    {
+        if(roomNode.isSelected)
+        {
+            roomNodeDeletionQueue.Enqueue(roomNode);
+            foreach(string childRoomNodeID in roomNode.childRoomNodeIDList)
+            {
+                RoomNodeSO childRoomNode = currentRoomNodeGraph.GetRoomNode(childRoomNodeID);
+                childRoomNode.RemoveParentRoomNodeIDFromRoomNode(roomNode.id);
+            }
+            foreach (string parentRoomNodeID in roomNode.parentRoomNodeIDList)
+            {
+                RoomNodeSO parentRoomNode = currentRoomNodeGraph.GetRoomNode(parentRoomNodeID);
+                parentRoomNode.RemoveChildRoomNodeIDFromRoomNode(roomNode.id);
+            }
+        }
+    }
+
+    while(roomNodeDeletionQueue.Count > 0)
+    {
+        RoomNodeSO roomNodeToDelete = roomNodeDeletionQueue.Dequeue();
+        currentRoomNodeGraph.roomNodeDictionary.Remove(roomNodeToDelete.id);
+        currentRoomNodeGraph.roomNodeList.Remove(roomNodeToDelete);
+
+        DestroyImmediate(roomNodeToDelete, true);
+    }
+}
+```
+그래프에 있는 모든 방 노드들을 순회하면서 노드가 선택된 상태라면 큐에 담아 리스트에서 삭제할 요소를 따로 두었습니다.</br>
+삭제할 노드가 가지고 있는 자식 노드 리스트를 전부 삭제하고 부모 노드의 경우 부모 노드의 자식 노드 리스트에서 자기 자신을 제거해 연결 관계를 끊었습니다.</br>
+큐에 담긴 요소를 순회하면서 그래프에 있는 리스트와 딕셔너리에서 자기자신을 제거하고 노드를 그래프상에서 파괴합니다.</br></br>
 
