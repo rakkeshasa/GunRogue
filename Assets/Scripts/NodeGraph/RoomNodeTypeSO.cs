@@ -30,9 +30,13 @@ public class RoomNodeTypeSO : ScriptableObject
     public bool isNone;
 
 #if UNITY_EDITOR
+
+    // 스크립트가 로드되거나 인스펙터에서 값이 변경될 때 Unity가 호출하는 에디터 전용 함수
+    // 인스펙터에서 값이 변경된 후 작업을 수행합니다(예: 데이터가 특정 범위 내에 있는지 확인)
     private void OnValidate()
     {
         HelperUtilities.ValidateCheckEmptyString(this, nameof(roomNodeTypeName), roomNodeTypeName);
     }
+
 #endif
 }

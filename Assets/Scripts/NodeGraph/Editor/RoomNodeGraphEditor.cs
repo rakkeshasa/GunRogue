@@ -67,7 +67,7 @@ public class RoomNodeGraphEditor : EditorWindow
         Selection.selectionChanged -= InspectorSelectionChanged;
     }
 
-    [OnOpenAsset(0)] // UnityEditor.Callbacks 네임스페이스 필요
+    [OnOpenAsset(0)] // 더블 클릭 이벤트를 감지하는 콜백
     public static bool OnDoubleClickAssets(int instanceID, int line)
     {
         // 인스펙터 창에서 RoomNodeGraphSO 에셋이 더블클릭되면 RoomNodeGraph 에디터창이 뜨도록하는 함수
