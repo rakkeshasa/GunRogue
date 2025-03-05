@@ -285,36 +285,26 @@ public class DungeonLevelSO : ScriptableObject
 }
 ```
 
+커스텀 에디터를 통해 레벨별로 5종의 그래프를 만들었습니다.</br>
+게임 매니저를 싱글톤으로 구현해서 매니저가 게임 내 던전의 레벨을 처리하고, 던전의 레벨 별로 구현할 그래프와 그래프를 구현할 방의 템플릿들의 정보를 가지고 있도록 했습니다.</br>
+예를 들어 게임을 새롭게 시작하면 레벨 1 던전부터 플레이하게 되고, 레벨 1에 맞는 그래프 5개 중 1개를 선택해 던전의 큰 틀을 설계하고, 그래프에 있는 방 노드들을 다양한 방 형태들을 사용해 구현하게 됩니다.</br></br>
+
 ```
 private bool AttemptToBuildRandomDungeon(RoomNodeGraphSO roomNodeGraph)
 {
-    Queue<RoomNodeSO> openRoomNodeQueue = new Queue<RoomNodeSO>();
     RoomNodeSO entranceNode = roomNodeGraph.GetRoomNode(roomNodeTypeList.list.Find(x => x.isEntrance));
-
-    if(entranceNode != null)
-    {
-        openRoomNodeQueue.Enqueue(entranceNode);
-    }
-    else
-    {
-        // 던전 생성 실패
-        Debug.Log("No Entrance Node");
-        return false;
-    }
+    openRoomNodeQueue.Enqueue(entranceNode);
 
     bool noRoomOverlaps = true;
     noRoomOverlaps = ProcessRoomsInOpenRoomNodeQueue(roomNodeGraph, openRoomNodeQueue, noRoomOverlaps);
 
-    if(openRoomNodeQueue.Count == 0 && noRoomOverlaps)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    if(openRoomNodeQueue.Count == 0 && noRoomOverlaps) return true;
+    else                                               return false;
 }
 ```
+그래프 5개 중에 1개를 선택해 구현할 방 노드들을 큐에 1개씩 담습니다.</br>
+모든 그래프의 최상위 노드인 입구부터 큐에 담으며 그 다음 노드부터는 구현할 방 형태가 다른 방과 겹치는지 체크하고 큐에 담도록 했습니다.</br></br>
+
 
 ```
 private bool ProcessRoomsInOpenRoomNodeQueue(RoomNodeGraphSO roomNodeGraph, Queue<RoomNodeSO> openRoomNodeQueue, bool noRoomOverlaps)
@@ -338,108 +328,47 @@ private bool ProcessRoomsInOpenRoomNodeQueue(RoomNodeGraphSO roomNodeGraph, Queu
         else
         {
             Room parentRoom = dungeonBuilderRoomDictionary[roomNode.parentRoomNodeIDList[0]];
-            noRoomOverlaps = CanPlaceRoomWithNoOverlaps(roomNode, parentRoom);
+            noRoomOverlaps = CanPlaceRoomW    ithNoOverlaps(roomNode, parentRoom);
         }
     }
 
     return noRoomOverlaps;
 }
 ```
+큐에서 첫번째 요소인 입구 노드를 추출하고 트리 그래프처럼 입구 노드부터 자식 노드들을 전부 큐에 담아 그래프에 있는 모든 노드들을 큐에 넣었습니다.</br>
+입구의 경우에는 부모 노드가 없으며 제일 우선적으로 배치되는 방이므로 다른 방과 겹치는지 확인하지 않고 바로 Room 클래스를 구현합니다.</br>
+입구가 아닌 경우에는 부모 노드인 방과 통로를 연결해주기 위해 부모 노드를 추출하고 부모 노드와 자신이 위치가 겹치는지 체크합니다.</br></br>
+
 
 ```
 private bool CanPlaceRoomWithNoOverlaps(RoomNodeSO roomNode, Room parentRoom)
 {
-    bool roomOverlaps = true;
-
-    // 방이 겹치지 않고 성공적으로 배치될 때까지 부모의 모든 출입구에 시도.
     while (roomOverlaps)
     {
-        // 부모 방 노드에서 연결되지 않은 통로 찾기
         List<Doorway> unconnectedParentDoorways = GetUnconnectedAvailableDoorways(parentRoom.doorWayList).ToList();
-        
-        if(unconnectedAvailableParentDoorways.Count == 0)
-            return false;
 
         Doorway doorwayParent = unconnectedParentDoorways[UnityEngine.Random.Range(0, unconnectedParentDoorways.Count)];
-        // 부모 문 방향과 일치하는 방 노드(복도)에 대한 랜덤 방 템플릿을 가져옵니다.
         RoomTemplateSO roomtemplate = GetRandomTemplateForRoomConsistentWithParent(roomNode, doorwayParent);
 
         Room room = CreateRoomFromRoomTemplate(roomtemplate, roomNode); // 방 정보 세팅
         if(PlaceTheRoom(parentRoom, doorwayParent, room))
         {
             roomOverlaps = false;
-            room.isPositioned = true;
             dungeonBuilderRoomDictionary.Add(room.id, room);
         }
         else
-        {
             roomOverlaps = true;
-        }
     }
 
     return true;
 }
 ```
+부모 노드 방과 자신을 연결하기 위해 부모 노드 방에서 아직 연결되지 않은 문을 리스트에 담습니다.</br>
+리스트에서 통로 1개를 추출해 해당 통로의 방향에 맞는 내 방의 형태를 갖고와 Room 클래스를 세팅합니다.</br>
+예를 들어 부모 노드가 가로축 통로라면 동쪽과 서쪽인 2개의 문이 존재하며 이미 통로는 입구나 다른 방에 의해 한 쪽 문이 연결된 상태입니다.</br>
+이 때 남은 통로 1개가 동쪽 문이라면 자식 노드는 서쪽 문을 갖고 있어야 연결이 가능하며 서쪽 문을 가지고 자신의 방 타입과 맞는 방 형태를 갖고와 Room 클래스를 구현하게 됩니다.</br></br>
 
-```
-private bool PlaceTheRoom(Room parentRoom, Doorway doorwayParent, Room room)
-{
-    Doorway doorway = GetOppositeDoorway(doorwayParent, room.doorWayList);
-
-    // 부모 출입구의 반대편이 없는 경우 다시 연결을 시도하지 않도록 부모 출입구를 표시
-    if(doorway == null)
-    {
-        doorwayParent.isUnavailable = true;
-        return false;
-    }
-
-    // 월드 기준으로 방 좌표 맞춰주기
-    Vector2Int parentDoorwayPosition = parentRoom.lowerBounds + doorwayParent.position - parentRoom.templateLowerBounds;
-
-    switch(doorway.orientation)
-    {
-        case Orientation.north:
-            adjustment = new Vector2Int(0, -1);
-            break;
-        case Orientation.east:
-            adjustment = new Vector2Int(-1, 0);
-            break;
-        case Orientation.south:
-            adjustment = new Vector2Int(0, 1);
-            break;
-        case Orientation.west:
-            adjustment = new Vector2Int(1, 0);
-            break;
-        case Orientation.none:
-            break;
-        default:
-            break;
-    }
-
-    // 부모 출입구와 일치하도록 방의 하한선과 상한선을 계산함.
-    room.lowerBounds = parentDoorwayPosition + adjustment + room.templateLowerBounds - doorway.position;
-    room.upperBounds = room.lowerBounds + room.templateUpperBounds - room.templateLowerBounds;
-
-    Room overlappingRoom = CheckForRoomOverlap(room);
-    if (overlappingRoom == null)
-    {
-        doorwayParent.isConnected = true;
-        doorwayParent.isUnavailable = true;
-
-        doorway.isConnected = true;
-        doorway.isUnavailable = true;
-
-        return true;
-    }
-    else
-    {
-        // 다음번에 시도를 안하도록 마크함
-        doorwayParent.isUnavailable = true;
-        return false;
-    }
-
-}
-```
+구현한 Room 클래스의 정보를 토대로 World좌표에 방을 좌표에 그리고 지금까지 구현한 방이 담긴 Dictionary의 모든 방과 겹치는지 체크를 합니다.</br>
 
 ```
 private bool IsOverlappingRoom(Room room1, Room room2)
@@ -467,6 +396,8 @@ private bool IsOverlappingInterval(int imin1, int imax1, int imin2, int imax2)
     }
 }
 ```
+방이 겹치는지 체크하는 방법은 사각형과 사격형끼리 겹치는지 확인하는 방식으로 두 방의 min, max 좌표를 비교했습니다.</br>
+모든 방과 겹치지 않는다면 해당 방은 구현할 수 있는 방이므로 추후에 인스턴스화하기 위해 Dictionary에 넣습니다.</br></br>
 
 ```
 private void InstantiateRoomGameObjects()
@@ -475,7 +406,6 @@ private void InstantiateRoomGameObjects()
     {
         Room room = keyvaluepair.Value;
 
-        // 방 템플릿 하한선을 기준으로 인스턴스함
         Vector3 roomPosition = new Vector3(room.lowerBounds.x - room.templateLowerBounds.x, room.lowerBounds.y - room.templateLowerBounds.y, 0f);
 
         GameObject roomGameObject = Instantiate(room.prefab, roomPosition, Quaternion.identity, transform);
@@ -487,3 +417,4 @@ private void InstantiateRoomGameObjects()
     }
 }
 ```
+그래프에 있는 모든 방 노드가 Dictionary에 담겼다면 방을 이제 인스턴스화하여 World에 배치합니다.</br>
