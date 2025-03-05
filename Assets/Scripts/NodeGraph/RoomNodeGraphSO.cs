@@ -24,6 +24,30 @@ public class RoomNodeGraphSO : ScriptableObject
         }
     }
 
+    public RoomNodeSO GetRoomNode(RoomNodeTypeSO roomNodeType)
+    {
+        foreach(RoomNodeSO node in roomNodeList)
+        {
+            if (node.roomNodeType == roomNodeType)
+            {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    public IEnumerable<RoomNodeSO> GetChildRoomNodes(RoomNodeSO parentRoomNode)
+    {
+        // 컬렉션을 반환하지만, IEnumerable<T>을 사용했으므로 이터레이터를 통해 하나씩 요소를 반환
+        foreach (string childNodeID in parentRoomNode.childRoomNodeIDList)
+        {   
+            // 함수가 실행되면 결과를 즉시 반환하지 않고, 호출자가 요청할 때마다 하나씩 반환하는 방식
+            // yield return을 사용하면 메모리에 모든 요소를 저장하지 않고, 호출자가 foreach로 요청할 때마다 하나씩 반환합니다.
+            // 호출자가 하나씩 순차적으로 자식노드 id를 가져올수 있다.
+            yield return GetRoomNode(childNodeID);
+        }
+    }
+
     public RoomNodeSO GetRoomNode(string roomNodeID)
     {
         // TryGetValue() 메서드는 Dictionary에서 지정된 키와 연결된 값을 검색하는 데 사용
