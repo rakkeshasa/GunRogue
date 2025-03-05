@@ -272,3 +272,218 @@ private void DeleteSelectedRoomNodes()
 삭제할 노드가 가지고 있는 자식 노드 리스트를 전부 삭제하고 부모 노드의 경우 부모 노드의 자식 노드 리스트에서 자기 자신을 제거해 연결 관계를 끊었습니다.</br>
 큐에 담긴 요소를 순회하면서 그래프에 있는 리스트와 딕셔너리에서 자기자신을 제거하고 노드를 그래프상에서 파괴합니다.</br></br>
 
+### 방 노드를 활용한 방 생성
+
+DungeonLevelSO : 그래프와 방을 실제로 연결해주는 클래스</br>
+
+```
+public class DungeonLevelSO : ScriptableObject
+{
+    public string levelName;
+    public List<RoomTemplateSO> roomTemplateList;
+    public List<RoomNodeGraphSO> roomNodeGraphList;
+}
+```
+
+```
+private bool AttemptToBuildRandomDungeon(RoomNodeGraphSO roomNodeGraph)
+{
+    Queue<RoomNodeSO> openRoomNodeQueue = new Queue<RoomNodeSO>();
+    RoomNodeSO entranceNode = roomNodeGraph.GetRoomNode(roomNodeTypeList.list.Find(x => x.isEntrance));
+
+    if(entranceNode != null)
+    {
+        openRoomNodeQueue.Enqueue(entranceNode);
+    }
+    else
+    {
+        // 던전 생성 실패
+        Debug.Log("No Entrance Node");
+        return false;
+    }
+
+    bool noRoomOverlaps = true;
+    noRoomOverlaps = ProcessRoomsInOpenRoomNodeQueue(roomNodeGraph, openRoomNodeQueue, noRoomOverlaps);
+
+    if(openRoomNodeQueue.Count == 0 && noRoomOverlaps)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+```
+
+```
+private bool ProcessRoomsInOpenRoomNodeQueue(RoomNodeGraphSO roomNodeGraph, Queue<RoomNodeSO> openRoomNodeQueue, bool noRoomOverlaps)
+{
+    while(openRoomNodeQueue.Count > 0 && noRoomOverlaps)
+    {
+        RoomNodeSO roomNode = openRoomNodeQueue.Dequeue();
+        
+        foreach(RoomNodeSO childRoomNode in roomNodeGraph.GetChildRoomNodes(roomNode))
+        {
+            openRoomNodeQueue.Enqueue(childRoomNode);
+        }
+
+        if(roomNode.roomNodeType.isEntrance)
+        {
+            RoomTemplateSO roomTemplate = GetRandomRoomTemplate(roomNode.roomNodeType);
+            Room room = CreateRoomFromRoomTemplate(roomTemplate, roomNode); // 방 정보 세팅
+            room.isPositioned = true;
+            dungeonBuilderRoomDictionary.Add(room.id, room);
+        }
+        else
+        {
+            Room parentRoom = dungeonBuilderRoomDictionary[roomNode.parentRoomNodeIDList[0]];
+            noRoomOverlaps = CanPlaceRoomWithNoOverlaps(roomNode, parentRoom);
+        }
+    }
+
+    return noRoomOverlaps;
+}
+```
+
+```
+private bool CanPlaceRoomWithNoOverlaps(RoomNodeSO roomNode, Room parentRoom)
+{
+    bool roomOverlaps = true;
+
+    // 방이 겹치지 않고 성공적으로 배치될 때까지 부모의 모든 출입구에 시도.
+    while (roomOverlaps)
+    {
+        // 부모 방 노드에서 연결되지 않은 통로 찾기
+        List<Doorway> unconnectedParentDoorways = GetUnconnectedAvailableDoorways(parentRoom.doorWayList).ToList();
+        
+        if(unconnectedAvailableParentDoorways.Count == 0)
+            return false;
+
+        Doorway doorwayParent = unconnectedParentDoorways[UnityEngine.Random.Range(0, unconnectedParentDoorways.Count)];
+        // 부모 문 방향과 일치하는 방 노드(복도)에 대한 랜덤 방 템플릿을 가져옵니다.
+        RoomTemplateSO roomtemplate = GetRandomTemplateForRoomConsistentWithParent(roomNode, doorwayParent);
+
+        Room room = CreateRoomFromRoomTemplate(roomtemplate, roomNode); // 방 정보 세팅
+        if(PlaceTheRoom(parentRoom, doorwayParent, room))
+        {
+            roomOverlaps = false;
+            room.isPositioned = true;
+            dungeonBuilderRoomDictionary.Add(room.id, room);
+        }
+        else
+        {
+            roomOverlaps = true;
+        }
+    }
+
+    return true;
+}
+```
+
+```
+private bool PlaceTheRoom(Room parentRoom, Doorway doorwayParent, Room room)
+{
+    Doorway doorway = GetOppositeDoorway(doorwayParent, room.doorWayList);
+
+    // 부모 출입구의 반대편이 없는 경우 다시 연결을 시도하지 않도록 부모 출입구를 표시
+    if(doorway == null)
+    {
+        doorwayParent.isUnavailable = true;
+        return false;
+    }
+
+    // 월드 기준으로 방 좌표 맞춰주기
+    Vector2Int parentDoorwayPosition = parentRoom.lowerBounds + doorwayParent.position - parentRoom.templateLowerBounds;
+
+    switch(doorway.orientation)
+    {
+        case Orientation.north:
+            adjustment = new Vector2Int(0, -1);
+            break;
+        case Orientation.east:
+            adjustment = new Vector2Int(-1, 0);
+            break;
+        case Orientation.south:
+            adjustment = new Vector2Int(0, 1);
+            break;
+        case Orientation.west:
+            adjustment = new Vector2Int(1, 0);
+            break;
+        case Orientation.none:
+            break;
+        default:
+            break;
+    }
+
+    // 부모 출입구와 일치하도록 방의 하한선과 상한선을 계산함.
+    room.lowerBounds = parentDoorwayPosition + adjustment + room.templateLowerBounds - doorway.position;
+    room.upperBounds = room.lowerBounds + room.templateUpperBounds - room.templateLowerBounds;
+
+    Room overlappingRoom = CheckForRoomOverlap(room);
+    if (overlappingRoom == null)
+    {
+        doorwayParent.isConnected = true;
+        doorwayParent.isUnavailable = true;
+
+        doorway.isConnected = true;
+        doorway.isUnavailable = true;
+
+        return true;
+    }
+    else
+    {
+        // 다음번에 시도를 안하도록 마크함
+        doorwayParent.isUnavailable = true;
+        return false;
+    }
+
+}
+```
+
+```
+private bool IsOverlappingRoom(Room room1, Room room2)
+{
+    bool isOverlappingX = IsOverlappingInterval(room1.lowerBounds.x, room1.upperBounds.x, room2.lowerBounds.x, room2.upperBounds.x);
+    bool isOverlappingY = IsOverlappingInterval(room1.lowerBounds.y, room1.upperBounds.y, room2.lowerBounds.y, room2.upperBounds.y);
+
+    if(isOverlappingX && isOverlappingY)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+private bool IsOverlappingInterval(int imin1, int imax1, int imin2, int imax2)
+{
+    if(Mathf.Max(imin1, imin2) <= Mathf.Min(imax1, imax2))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+```
+
+```
+private void InstantiateRoomGameObjects()
+{
+    foreach (KeyValuePair<string, Room> keyvaluepair in dungeonBuilderRoomDictionary)
+    {
+        Room room = keyvaluepair.Value;
+
+        // 방 템플릿 하한선을 기준으로 인스턴스함
+        Vector3 roomPosition = new Vector3(room.lowerBounds.x - room.templateLowerBounds.x, room.lowerBounds.y - room.templateLowerBounds.y, 0f);
+
+        GameObject roomGameObject = Instantiate(room.prefab, roomPosition, Quaternion.identity, transform);
+        InstantiatedRoom instantiatedRoom = roomGameObject.GetComponentInChildren<InstantiatedRoom>();
+        instantiatedRoom.room = room;
+
+        instantiatedRoom.Initialise(roomGameObject);
+        room.instantiatedRoom = instantiatedRoom;
+    }
+}
+```
