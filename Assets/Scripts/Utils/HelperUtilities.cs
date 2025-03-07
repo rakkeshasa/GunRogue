@@ -14,6 +14,17 @@ public class HelperUtilities
         return false;
     }
 
+    public static bool ValidateCheckNullValue(Object thisObject, string fieldName, UnityEngine.Object objectToCheck)
+    {
+        if (objectToCheck == null)
+        {
+            Debug.Log(fieldName + " is null and must contain a value in object " + thisObject.name.ToString());
+            return true;
+        }
+
+        return false;
+    }
+
     // IEnumerable<T>를 사용하면 다양한 컬렉션 타입을 받을 수 있다.
     // List<T>뿐만 아니라 Array, HashSet<T>, Queue<T> 같은 다른 컬렉션도 받을 수 있다.
     // IEnumerable<T>를 사용하면 "지연 실행(lazy evaluation)"이 가능하다. 즉, foreach 루프를 실행할 때 컬렉션 전체를 복사하지 않아 성능상 유리한 반면, List<T> 는 컬렉션 전체를 메모리에 올린다.
@@ -49,4 +60,50 @@ public class HelperUtilities
         }
         return error;
     }
+
+    public static bool ValidateCheckPositiveValue(Object thisObject, string fieldName, int valueToCheck, bool isZeroAllowed)
+    {
+        bool error = false;
+        if (isZeroAllowed)
+        {
+            if (valueToCheck < 0)
+            {
+                Debug.Log(fieldName + " must contain a positive value or zero in object " + thisObject.name.ToString());
+                error = true;
+            }
+        }
+        else
+        {
+            if (valueToCheck == 0)
+            {
+                Debug.Log(fieldName + " must contain a positive value in object " + thisObject.name.ToString());
+                error = true;
+            }
+        }
+
+        return error;
+    }
+
+    public static Vector3 GetSpawnPositionNearestToPlayer(Vector3 playerPosition)
+    {
+        // 플레이어에게 가장 가까운 스폰위치 찾기
+        Room currentRoom = GameManager.Instance.GetCurrentRoom();
+        Grid grid = currentRoom.instantiatedRoom.grid;
+
+        Vector3 nearestSpawnPosition = new Vector3(10000f, 10000f, 0f);
+
+        // 월드 좌표로 변환
+        foreach(Vector2Int spawnPositionGrid in currentRoom.spawnPositionArray)
+        {
+            Vector3 spawnPositionWorld = grid.CellToWorld((Vector3Int)spawnPositionGrid);
+
+            if(Vector3.Distance(spawnPositionWorld, playerPosition) < Vector3.Distance(nearestSpawnPosition, playerPosition))
+            {
+                nearestSpawnPosition = spawnPositionWorld;
+            }
+        }
+
+        return nearestSpawnPosition;
+    }
+
 }

@@ -383,6 +383,8 @@ public class DungeonBuilder : SingletonMonobehavior<DungeonBuilder>
             // 입구의 경우
             room.parentRoomID = "";
             room.isPreviouslyVisited = true;
+
+            GameManager.Instance.SetCurrentRoom(room);
         }
         else
         {

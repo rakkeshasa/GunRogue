@@ -36,7 +36,7 @@ public class InstantiatedRoom : MonoBehaviour
 
     private void PopulateTilemapMemberVariables(GameObject roomGameObject)
     {
-        grid = roomGameObject.GetComponent<Grid>();
+        grid = roomGameObject.GetComponentInChildren<Grid>();
         Tilemap[] tilemaps = roomGameObject.GetComponentsInChildren<Tilemap>();
         foreach (Tilemap tilemap in tilemaps)
         {
