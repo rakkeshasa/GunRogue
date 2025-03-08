@@ -18,10 +18,10 @@ PrefabInstance:
     - target: {fileID: 817124465889036288, guid: 6db469ff7760210439a0fcb6cf599b25, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 21300000, guid: abbe40c4d6a803f42a7c4f53404a484d, type: 3}
     - target: {fileID: 817124465889036288, guid: 6db469ff7760210439a0fcb6cf599b25, type: 3}
       propertyPath: m_WasSpriteAssigned
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 817124465889036291, guid: 6db469ff7760210439a0fcb6cf599b25, type: 3}
       propertyPath: m_SpriteTilingProperty.pivot.x
@@ -123,6 +123,10 @@ PrefabInstance:
       propertyPath: m_WasSpriteAssigned
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6384540990711051843, guid: 6db469ff7760210439a0fcb6cf599b25, type: 3}
+      propertyPath: weaponShootPosition
+      value: 
+      objectReference: {fileID: 185522254306451056}
     - target: {fileID: 8665612734917785926, guid: 6db469ff7760210439a0fcb6cf599b25, type: 3}
       propertyPath: m_Size.x
       value: 0.25
@@ -141,3 +145,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6db469ff7760210439a0fcb6cf599b25, type: 3}
+--- !u!4 &185522254306451056 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6398432392735486986, guid: 6db469ff7760210439a0fcb6cf599b25, type: 3}
+  m_PrefabInstance: {fileID: 6510190607724735098}
+  m_PrefabAsset: {fileID: 0}
