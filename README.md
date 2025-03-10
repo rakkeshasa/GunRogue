@@ -418,3 +418,110 @@ private void InstantiateRoomGameObjects()
 }
 ```
 그래프에 있는 모든 방 노드가 Dictionary에 담겼다면 방을 이제 인스턴스화하여 World에 배치합니다.</br>
+
+### Cinemachine
+역동적인 카메라 움직임을 주기 위해 Cinemachine을 사용했습니다.</br>
+Cinemachine은 Unity의 카메라 시스템을 강화하는 강력한 카메라 제어 패키지로 자동 추적, 충돌 감지, 뷰 조정 등을 쉽게 구현할 수 있도록 돕는 시스템입니다.</br>
+Cinemachine이 Unity의 카메라를 직접 조작하지 않고, Virtual Camera(VCam) 개념을 도입해 카메라의 움직임을 설정합니다.</br>
+Cinemachine은 씬에 여러 개의 VCam을 설정하고 우선순위를 두어 어떤 카메라가 활성화될지 제어할 수 있으며 Unity Camera는 VCam을 따라 움직이는 역할을 합니다.</br>
+</br>
+
+![cinemachine target group](https://github.com/user-attachments/assets/31b4e544-9f43-4fce-a47b-f20a470dae46)
+</br>
+이 프로젝트에서는 카메라가 플레이어를 중심에 두고 움직이는 것이 아니라 플레이어와 마우스의 중점을 중심에 두고 움직이게 하기 위해 Cinemachine을 사용했습니다.</br>
+그렇게 하기 위해서는 VCam이 어떤 것을 중심으로 찍어야 할지 Cinemachine Target Group에 객체를 넘겨줘야 합니다.</br>
+Target Group에 플레이어와 마우스를 담기 위해 리스트를 새로 생성하고 마우스와 플레이어를 담아 VCam이 찍어야 하는 객체를 넘겨줬습니다.</br>
+두 객체의 가중치를 동일하게 1로 두어 VCam이 마우스와 플레이어의 중점을 중심으로 두도록 했습니다.</br>
+
+```
+private void SetCinemachineTargetGroup()
+{
+    CinemachineTargetGroup.Target cinemachineGroupTarget_player = new CinemachineTargetGroup.Target {
+        weight = 1f, radius = 2.5f, target = GameManager.Instance.GetPlayer().transform };
+    CinemachineTargetGroup.Target cinemachineGroupTarget_cursor = new CinemachineTargetGroup.Target {
+        weight = 1f, radius = 1f, target = cursorTarget };
+
+    CinemachineTargetGroup.Target[] cinemachingTargetArray = new CinemachineTargetGroup.Target[] {
+        cinemachineGroupTarget_player, cinemachineGroupTarget_cursor };
+
+    cinemachingTargetGroup.m_Targets = cinemachingTargetArray;
+}
+```
+
+### 발행-구독 디자인 패턴
+플레이어의 입력에 따른 이동 처리를 Action을 이용해 처리하나 옵저버 패턴이 아닌 발행-구독 디자인 패턴을 사용했습니다.</br>
+옵저버 패턴은 한 객체의 상태 변화가 여러 객체에 자동으로 반영되도록 하는 패턴으로 상태 변화를 관찰하는 옵저버(구독자)가 발행자를 직접 구독해야 동작할 수 있습니다.</br>
+하지만 발행-구독 패턴은 구독자와 발행자가 분리되어 있어 서로 참조하지 않고, 둘 사이에 이벤트 관리자를 사용해 통신이 가능하도록 해 옵저버 패턴보다는 더 낮은 결합도를 가지고 있습니다.</br>
+
+```
+public class MovementByVelocityEvent : MonoBehaviour
+{
+    public event Action<MovementByVelocityEvent, MovementByVelocityArgs> OnMovementByVelocity;
+
+    public void CallMovementByVelocityEvent(Vector2 moveDirection, float moveSpeed)
+    {
+        OnMovementByVelocity?.Invoke(this, new MovementByVelocityArgs() { moveDirection = moveDirection, moveSpeed = moveSpeed });
+    }
+}
+
+public class MovementByVelocityArgs : EventArgs
+{
+    public Vector2 moveDirection;
+    public float moveSpeed;
+}
+```
+구독자와 발행자 사이를 이어주는 이벤트 관리자 클래스로 델리게이트를 선언하고 넘겨줄 인자를 따로 클래스를 생성해 관리했습니다.</br>
+델리게이트에 추가적인 정보를 보내야할경우 구독자나 발행자 측 코드를 수정 할 필요없이 EventArgs만 수정하면 되기때문에 낮은 결합도를 체감할 수 있었습니다.</br>
+
+```
+private void OnEnable()
+{
+    movementByVelocityEvent.OnMovementByVelocity += MovementByVelocityEvent_OnMovementByVelocity;
+}
+
+private void MovementByVelocityEvent_OnMovementByVelocity(MovementByVelocityEvent movementByVelocityEvent, MovementByVelocityArgs movementByVelocityArgs)
+{
+    MoveRigidBody(movementByVelocityArgs.moveDirection, movementByVelocityArgs.moveSpeed);
+}
+
+private void MoveRigidBody(Vector2 moveDirection, float moveSpeed)
+{
+    rigidBody2D.velocity = moveDirection * moveSpeed;
+}
+```
+구독자는 이벤트 관리자의 델리게이트를 구독하고 이벤트가 발생하면 바인딩한 함수를 호출해 플레이어의 RigidBody의 속도를 세팅해 움직이도록 했습니다.</br>
+또한 이벤트는 가비지 컬렉터(GC)에 의해 자동 정리되지 않으므로 OnDisable에서 이벤트 구독을 해제해 메모리 누수가 방지했습니다.</br>
+구독자는 발행자인 PlayerControl 클래스를 전혀 알고 있지 않으며 발행자인 PlayerControl 클래스 또한 구독자 클래스를 알지 않고 서로 이벤트 관리자를 통해서만 통신을 할 수 있습니다.</br>
+이동 담당 클래스뿐만 아니라 애니메이션을 관리하는 클래스도 PlayerControl 클래스를 감시하지 않고 이벤트 관리자를 통해 델리게이트를 구독해 발행-구독 패턴을 구현했습니다.</br>
+
+### 플레이어 회피
+구르는 동작을 더 자연스럽게 만들고, 구르는 중에 다른 동작을 방지하기 위해 코루틴을 활용했습니다.</br>
+특히 구르는 동작은 RidigdBody의 MovePosition을 사용해서 이동하므로 정확한 물리연산을 위해 WaitForFixedUpdate를 사용해 물리 엔진이 적용된 후 다음 이동을 수행하도록 했습니다.</br>
+
+```
+private void PlayerRoll(Vector3 direction)
+{
+    playerRollCoroutine = StartCoroutine(PlayerRollRoutine(direction));
+}
+
+private IEnumerator PlayerRollRoutine(Vector3 direction)
+{
+    float minDistance = 0.2f;
+    Vector3 targetPosition = player.transform.position + (Vector3)direction * movementDetails.rollDistance;
+
+    while(Vector3.Distance(player.transform.position, targetPosition) > minDistance)
+    {
+        player.movementToPositionEvent.CallMovementToPositionEvent(targetPosition, player.transform.position, movementDetails.rollSpeed, direction, isPlayerRolling);
+
+        yield return waitForFixedUpdate;
+    }
+
+    isPlayerRolling = false;
+    playerRollCooldownTimer = movementDetails.rollCooldownTime;
+    player.transform.position = targetPosition;
+}
+```
+플레이어가 구르는 키를 입력하면 구르는 코루틴을 실행하며 해당 코루틴을 변수에 저장해 구르는 중에 벽에 부딪힐 경우 코루틴을 중지할 수 있게 했습니다.</br>
+코루틴에서는 while문을 돌면서 구르는 거리가 일정치 이하가 될 때까지 순회하도록 했으며, FixedUpdate마다 이벤트 관리자의 이벤트를 발생시켜 캐릭터의 RigidBody의 위치를 강제로 이동시켜 점진적으로 나아가는 것처럼 보이게했습니다.</br>
+while문이 종료되면 구르기 쿨타임을 적용하고 플레이어의 위치를 정확하게 하기 위해 보정했습니다.</br></br>
+
