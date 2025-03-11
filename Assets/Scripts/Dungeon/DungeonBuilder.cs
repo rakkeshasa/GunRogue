@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 [DisallowMultipleComponent]
-public class DungeonBuilder : SingletonMonobehavior<DungeonBuilder>
+public class DungeonBuilder : SingletonMonobehaviour<DungeonBuilder>
 {
     public Dictionary<string, Room> dungeonBuilderRoomDictionary = new Dictionary<string, Room>();
     private Dictionary<string, RoomTemplateSO> roomTemplateDictionary = new Dictionary<string, RoomTemplateSO>();

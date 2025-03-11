@@ -4,7 +4,7 @@ using UnityEngine;
 
 // 게임 오브젝트에 1개의 컴포넌트만 존재하도록 함
 [DisallowMultipleComponent]
-public class GameManager : SingletonMonobehavior<GameManager>
+public class GameManager : SingletonMonobehaviour<GameManager>
 {
     [Space(10)]
     [Header("DUNGEON LEVELS")]
@@ -38,6 +38,21 @@ public class GameManager : SingletonMonobehavior<GameManager>
 
         player = playerGameObject.GetComponent<Player>();
         player.Initialize(playerDetails);
+    }
+
+    private void OnEnable()
+    {
+        StaticEventHandler.OnRoomChanged += StaticEventHandler_OnRoomChanged;
+    }
+
+    private void OnDisable()
+    {
+        StaticEventHandler.OnRoomChanged -= StaticEventHandler_OnRoomChanged;
+    }
+
+    private void StaticEventHandler_OnRoomChanged(RoomChangedEventArgs roomChangedEventArgs)
+    {
+        SetCurrentRoom(roomChangedEventArgs.room);
     }
 
     private void Start()
