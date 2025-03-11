@@ -28,6 +28,14 @@ public class PlayerControl : MonoBehaviour
     private void Start()
     {
         waitForFixedUpdate = new WaitForFixedUpdate();
+
+        SetPlayerAnimationSpeed();
+    }
+
+    private void SetPlayerAnimationSpeed()
+    {
+        // 이속이 빨라지면 애니메이션 재생 속도도 빠르게
+        player.animator.speed = moveSpeed / Settings.baseSpeedForPlayerAnimations;
     }
 
     private void Update()

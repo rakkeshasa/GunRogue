@@ -11,6 +11,7 @@ public class HelperUtilities
 
         Vector3 mouseScreenPosition = Input.mousePosition;
 
+        // 스크린 크기보다 더 크지 않도록 클램핑
         mouseScreenPosition.x = Mathf.Clamp(mouseScreenPosition.x, 0f, Screen.width);
         mouseScreenPosition.y = Mathf.Clamp(mouseScreenPosition.y, 0f, Screen.height);
 
@@ -23,6 +24,8 @@ public class HelperUtilities
 
     public static float GetAngleFromVector(Vector3 vector)
     {
+        // tan(각도) = y(세로) / x (가로)
+        // 각도 = Arctan(y / x)
         float radians = Mathf.Atan2(vector.y, vector.x);
 
         float degrees = radians * Mathf.Rad2Deg;
