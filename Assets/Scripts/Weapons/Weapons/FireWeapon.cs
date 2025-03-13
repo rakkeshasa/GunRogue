@@ -47,8 +47,7 @@ public class FireWeapon : MonoBehaviour
 
     private void WeaponFire(FireWeaponEventArgs fireWeaponEventArgs)
     {
-        // Handle weapon precharge timer.
-        // WeaponPreCharge(fireWeaponEventArgs);
+        WeaponPreCharge(fireWeaponEventArgs);
 
         if (fireWeaponEventArgs.fire)
         {
@@ -56,22 +55,21 @@ public class FireWeapon : MonoBehaviour
             {
                 FireAmmo(fireWeaponEventArgs.aimAngle, fireWeaponEventArgs.weaponAimAngle, fireWeaponEventArgs.weaponAimDirectionVector);
                 ResetCoolDownTimer();
-                // ResetPrechargeTimer();
+                ResetPrechargeTimer();
             }
         }
     }
 
     private void WeaponPreCharge(FireWeaponEventArgs fireWeaponEventArgs)
     {
-        // Weapon precharge.
+        // 차지중이라면
         if (fireWeaponEventArgs.firePreviousFrame)
         {
-            // Decrease precharge timer if fire button held previous frame.
+            // 저번 프레임부터 차지중이였다면 차지 타이머 감소
             firePreChargeTimer -= Time.deltaTime;
         }
         else
         {
-            // else reset the precharge timer.
             ResetPrechargeTimer();
         }
     }
@@ -86,7 +84,7 @@ public class FireWeapon : MonoBehaviour
         if (activeWeapon.GetCurrentWeapon().isWeaponReloading)
             return false;
 
-        // 연사 속도 타이머가 아직 갱신되지 않은 경우
+        // 연사 속도 타이머가 아직 갱신되지 않은 경우 또는 차지 중인 경우
         if (firePreChargeTimer > 0f || fireRateCoolDownTimer > 0f)
             return false;
 

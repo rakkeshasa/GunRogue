@@ -12,6 +12,7 @@ public class PlayerControl : MonoBehaviour
 
     private int currentWeaponIndex = 1;
     private Player player;
+    private bool leftMouseDownPreviousFrame = false;
     private float moveSpeed;
     private Coroutine playerRollCoroutine;
     private WaitForFixedUpdate waitForFixedUpdate;
@@ -164,8 +165,13 @@ public class PlayerControl : MonoBehaviour
     {
         if (Input.GetMouseButton(0))
         {
-            player.fireWeaponEvent.CallFireWeaponEvent(true, playerAimDirection, playerAngleDegrees, weaponAngleDegrees, weaponDirection);
+            player.fireWeaponEvent.CallFireWeaponEvent(true, leftMouseDownPreviousFrame,playerAimDirection, playerAngleDegrees, weaponAngleDegrees, weaponDirection);
 
+            leftMouseDownPreviousFrame = true;
+        }
+        else
+        {
+            leftMouseDownPreviousFrame = false;
         }
     }
 
