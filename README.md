@@ -552,3 +552,5 @@ private void CreatePool(GameObject prefab, int poolSize, string componentType)
 Pool은 Pool의 크기와 프리팹, 프리팹이 갖고 있는 컴포넌트의 이름의 정보를 갖고 있습니다.</br>
 게임에서는 총기별로 다른 총알을 쏘기 때문에 각 총알의 프리팹 ID를 Key로 두고 총알의 컴포넌트를 Queue에 모아 Value값으로 하는 Dictionary로 관리했습니다.</br>
 오브젝트 풀을 생성한 다음 게임에서 필요할 때마다 프리팹의 ID를 통해 큐에 접근하고 하나씩 추출해 게임 오브젝트를 활성화시켰습니다.</BR>
+
+### 격발 및 재장전
