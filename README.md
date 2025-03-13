@@ -525,3 +525,30 @@ private IEnumerator PlayerRollRoutine(Vector3 direction)
 코루틴에서는 while문을 돌면서 구르는 거리가 일정치 이하가 될 때까지 순회하도록 했으며, FixedUpdate마다 이벤트 관리자의 이벤트를 발생시켜 캐릭터의 RigidBody의 위치를 강제로 이동시켜 점진적으로 나아가는 것처럼 보이게했습니다.</br>
 while문이 종료되면 구르기 쿨타임을 적용하고 플레이어의 위치를 정확하게 하기 위해 보정했습니다.</br></br>
 
+### 오브젝트 풀링
+오브젝트 풀링은 게임 성능을 최적화하는 데 사용할 수 있는 디자인 패턴으로 게임 중에 객체를 생성하고 파괴하는 것이 아니라, 필요한 객체를 오브젝트 풀에서 가져와서 사용할 수 있도록 '활성화'한 다음 더 이상 필요하지 않으면 '비활성화'하는 기능입니다.</br>
+이번 게임에서는 플레이어가 발사하는 총알은 수명이 짧고 많이 생성될 것이기 때문에 오브젝트 풀링을 통해 관리합니다.</br>
+
+```
+private void CreatePool(GameObject prefab, int poolSize, string componentType)
+{
+    int poolKey = prefab.GetInstanceID();
+    string prefabName = prefab.name;
+    GameObject parentGameObject = new GameObject(prefabName + "Pool");
+    parentGameObject.transform.SetParent(objectPoolTransform);
+
+    if (!poolDictionary.ContainsKey(poolKey))
+    {
+        poolDictionary.Add(poolKey, new Queue<Component>());
+        for (int i = 0; i < poolSize; i++)
+        {
+            GameObject newObject = Instantiate(prefab, parentGameObject.transform) as GameObject;
+            newObject.SetActive(false);
+            poolDictionary[poolKey].Enqueue(newObject.GetComponent(Type.GetType(componentType)));
+        }
+    }
+}
+```
+Pool은 Pool의 크기와 프리팹, 프리팹이 갖고 있는 컴포넌트의 이름의 정보를 갖고 있습니다.</br>
+게임에서는 총기별로 다른 총알을 쏘기 때문에 각 총알의 프리팹 ID를 Key로 두고 총알의 컴포넌트를 Queue에 모아 Value값으로 하는 Dictionary로 관리했습니다.</br>
+오브젝트 풀을 생성한 다음 게임에서 필요할 때마다 프리팹의 ID를 통해 큐에 접근하고 하나씩 추출해 게임 오브젝트를 활성화시켰습니다.</BR>
