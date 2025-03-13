@@ -2,16 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Player))]
+[DisallowMultipleComponent]
 public class PlayerControl : MonoBehaviour
 {
     [Tooltip("MovementDetailsSO scriptable object cotaining movement details such as speed")]
     [SerializeField]
     private MovementDetailsSO movementDetails;
 
-    [Tooltip("The player WeaponShootPosition gameObject in the hieracrchy")]
-    [SerializeField]
-    private Transform weaponShootPosition;
-
+    private int currentWeaponIndex = 1;
     private Player player;
     private float moveSpeed;
     private Coroutine playerRollCoroutine;
@@ -29,7 +28,22 @@ public class PlayerControl : MonoBehaviour
     {
         waitForFixedUpdate = new WaitForFixedUpdate();
 
+        SetStartingWeapon();
         SetPlayerAnimationSpeed();
+    }
+
+    private void SetStartingWeapon()
+    {
+        int index = 1;
+        foreach(Weapon weapon in player.weaponList)
+        {
+            if(weapon.weaponDetails == player.playerDetails.startingWeapon)
+            {
+                SetWeaponByIndex(index);
+                break;
+            }
+            index++;
+        }
     }
 
     private void SetPlayerAnimationSpeed()
@@ -122,6 +136,9 @@ public class PlayerControl : MonoBehaviour
         AimDirection playerAimDirection;
 
         AimWeaponInput(out weaponDirection, out weaponAngleDegrees, out playerAngleDegrees, out playerAimDirection);
+
+        FireWeaponInput(weaponDirection, weaponAngleDegrees, playerAngleDegrees, playerAimDirection);
+        ReloadWeaponInput();
     }
 
     private void AimWeaponInput(out Vector3 weaponDirection, out float weaponAngleDegrees, out float playerAngleDegrees, out AimDirection playerAimDirection)
@@ -130,7 +147,7 @@ public class PlayerControl : MonoBehaviour
         Vector3 mouseWorldPosition = HelperUtilities.GetMouseWorldPosition();
         
         // 총구 -> 마우스 벡터
-        weaponDirection = (mouseWorldPosition - weaponShootPosition.position);
+        weaponDirection = (mouseWorldPosition - player.activeWeapon.GetShootPosition());
 
         // 플레이어 -> 마우스 벡터
         Vector3 playerDirection = (mouseWorldPosition - transform.position);
@@ -141,6 +158,44 @@ public class PlayerControl : MonoBehaviour
 
         // 이벤트 발생시키기
         player.aimWeaponEvent.CallAimWeaponEvent(playerAimDirection, playerAngleDegrees, weaponAngleDegrees, weaponDirection);
+    }
+
+    private void FireWeaponInput(Vector3 weaponDirection, float weaponAngleDegrees, float playerAngleDegrees, AimDirection playerAimDirection)
+    {
+        if (Input.GetMouseButton(0))
+        {
+            player.fireWeaponEvent.CallFireWeaponEvent(true, playerAimDirection, playerAngleDegrees, weaponAngleDegrees, weaponDirection);
+
+        }
+    }
+
+    private void SetWeaponByIndex(int weaponIndex)
+    {
+        if(weaponIndex - 1 < player.weaponList.Count)
+        {
+            currentWeaponIndex = weaponIndex;
+            player.setActiveWeaponEvent.CallSetActiveWeaponEvent(player.weaponList[weaponIndex - 1]);
+        }
+    }
+
+    private void ReloadWeaponInput()
+    {
+        Weapon currentWeapon = player.activeWeapon.GetCurrentWeapon();
+        if (currentWeapon.isWeaponReloading)
+            return;
+
+        // 남은 탄약이 탄창 용량보다 적은 경우
+        if (currentWeapon.weaponRemainingAmmo < currentWeapon.weaponDetails.weaponClipAmmoCapacity && !currentWeapon.weaponDetails.hasInfiniteAmmo)
+            return;
+
+        // 총알이 탄창에 가득찬 경우
+        if(currentWeapon.weaponClipRemainingAmmo == currentWeapon.weaponDetails.weaponClipAmmoCapacity)
+            return;
+
+        if(Input.GetKeyDown(KeyCode.R))
+        {
+            player.reloadWeaponEvent.CallReloadWeaponEvent(player.activeWeapon.GetCurrentWeapon(), 0);
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

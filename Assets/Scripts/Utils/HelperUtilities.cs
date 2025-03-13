@@ -33,6 +33,13 @@ public class HelperUtilities
         return degrees;
     }
 
+    public static Vector3 GetDirectionVectorFromAngle(float angle)
+    {
+        // 방향벡터 추출
+        Vector3 directionVector = new Vector3(Mathf.Cos(Mathf.Deg2Rad * angle), Mathf.Sin(Mathf.Deg2Rad * angle), 0f);
+        return directionVector;
+    }
+
     public static AimDirection GetAimDirection(float angleDegrees)
     {
         AimDirection aimDirection;
@@ -75,7 +82,7 @@ public class HelperUtilities
     {
         if (stringToCheck == "")
         {
-            Debug.Log(fieldName + "is empty and must contain a value in object " + thisObject.name.ToString());
+            Debug.Log(fieldName + " is empty and must contain a value in object " + thisObject.name.ToString());
             return true;
         }
         return false;

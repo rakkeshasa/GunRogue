@@ -22,6 +22,14 @@ public class PlayerDetailsSO : ScriptableObject
     public int playerHealthAmount;
 
     [Space(10)]
+    [Header("WEAPON")]
+    [Tooltip("Player initial starting weapon")]
+    public WeaponDetailsSO startingWeapon;
+
+    [Tooltip("Populate with the list of starting weapons")]
+    public List<WeaponDetailsSO> startingWeaponList;
+
+    [Space(10)]
     [Header("OTHER")]
     [Tooltip("Player icon sprite to be used in the minimap")]
     public Sprite playerMiniMapIcon;
@@ -36,9 +44,11 @@ public class PlayerDetailsSO : ScriptableObject
         HelperUtilities.ValidateCheckEmptyString(this, nameof(playerCharacterName), playerCharacterName);
         HelperUtilities.ValidateCheckNullValue(this, nameof(playerPrefab), playerPrefab);
         HelperUtilities.ValidateCheckPositiveValue(this, nameof(playerHealthAmount), playerHealthAmount, false);
+        HelperUtilities.ValidateCheckNullValue(this, nameof(startingWeapon), startingWeapon);
         HelperUtilities.ValidateCheckNullValue(this, nameof(playerMiniMapIcon), playerMiniMapIcon);
         HelperUtilities.ValidateCheckNullValue(this, nameof(playerHandSprite), playerHandSprite);
         HelperUtilities.ValidateCheckNullValue(this, nameof(runtimeAnimatorController), runtimeAnimatorController);
+        HelperUtilities.ValidateCheckEnumerableValues(this, nameof(startingWeaponList), startingWeaponList);
     }
 
 #endif

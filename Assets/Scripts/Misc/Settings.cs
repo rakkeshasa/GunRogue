@@ -41,4 +41,9 @@ public class Settings
     // 플레이어 태그
     public const string playerTag = "Player";
     public const string playerWeapon = "playerWeapon";
+
+    // 사격 제어
+    // 몬스터가 가까이 붙으면 무기의 사격각을 사용하지 않고 플레이어의 사격각을 사용
+    // 발사 위치도 무기가 아닌 플레이어를 기준으로 나가게 함
+    public const float useAimAngleDistance = 3.5f;
 }
