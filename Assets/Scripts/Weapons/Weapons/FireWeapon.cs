@@ -105,22 +105,7 @@ public class FireWeapon : MonoBehaviour
 
         if (currentAmmo != null)
         {
-            // StartCoroutine(FireAmmoRoutine(currentAmmo, aimAngle, weaponAimAngle, weaponAimDirectionVector));
-            GameObject ammoPrefab = currentAmmo.ammoPrefabArray[Random.Range(0, currentAmmo.ammoPrefabArray.Length)];
-            float ammoSpeed = Random.Range(currentAmmo.ammoSpeedMin, currentAmmo.ammoSpeedMax);
-
-            // IFireable 인터페이스(컴포넌트)를 가지는 게임 오브젝트만 추출
-            IFireable ammo = (IFireable)PoolManager.Instance.ReuseComponent(ammoPrefab, activeWeapon.GetShootPosition(), Quaternion.identity);
-
-            ammo.InitialiseAmmo(currentAmmo, aimAngle, weaponAimAngle, ammoSpeed, weaponAimDirectionVector);
-            
-            if (!activeWeapon.GetCurrentWeapon().weaponDetails.hasInfiniteClipCapacity)
-            {
-                activeWeapon.GetCurrentWeapon().weaponClipRemainingAmmo--;
-                activeWeapon.GetCurrentWeapon().weaponRemainingAmmo--;
-            }
-
-            weaponFiredEvent.CallWeaponFiredEvent(activeWeapon.GetCurrentWeapon());
+            StartCoroutine(FireAmmoRoutine(currentAmmo, aimAngle, weaponAimAngle, weaponAimDirectionVector));
         }
     }
 
@@ -129,9 +114,9 @@ public class FireWeapon : MonoBehaviour
         int ammoCounter = 0;
         int ammoPerShot = Random.Range(currentAmmo.ammoSpawnAmountMin, currentAmmo.ammoSpawnAmountMax + 1);
 
-        // Get random interval between ammo
         float ammoSpawnInterval;
 
+        // 여러발의 탄환이 나가는가(샷건)
         if (ammoPerShot > 1)
         {
             ammoSpawnInterval = Random.Range(currentAmmo.ammoSpawnIntervalMin, currentAmmo.ammoSpawnIntervalMax);
@@ -141,35 +126,27 @@ public class FireWeapon : MonoBehaviour
             ammoSpawnInterval = 0f;
         }
 
-        // Loop for number of ammo per shot
         while (ammoCounter < ammoPerShot)
         {
             ammoCounter++;
 
-            // Get ammo prefab from array
             GameObject ammoPrefab = currentAmmo.ammoPrefabArray[Random.Range(0, currentAmmo.ammoPrefabArray.Length)];
-
-            // Get random speed value
             float ammoSpeed = Random.Range(currentAmmo.ammoSpeedMin, currentAmmo.ammoSpeedMax);
 
-            // Get Gameobject with IFireable component
+            // IFireable 인터페이스(컴포넌트)를 가지는 게임 오브젝트만 추출
             IFireable ammo = (IFireable)PoolManager.Instance.ReuseComponent(ammoPrefab, activeWeapon.GetShootPosition(), Quaternion.identity);
-
-            // Initialise Ammo
             ammo.InitialiseAmmo(currentAmmo, aimAngle, weaponAimAngle, ammoSpeed, weaponAimDirectionVector);
 
-            // Wait for ammo per shot timegap
             yield return new WaitForSeconds(ammoSpawnInterval);
         }
 
-        // Reduce ammo clip count if not infinite clip capacity
+        // 무한 탄약이 아니면 총알 감소
         if (!activeWeapon.GetCurrentWeapon().weaponDetails.hasInfiniteClipCapacity)
         {
             activeWeapon.GetCurrentWeapon().weaponClipRemainingAmmo--;
             activeWeapon.GetCurrentWeapon().weaponRemainingAmmo--;
         }
 
-        // Call weapon fired event
         weaponFiredEvent.CallWeaponFiredEvent(activeWeapon.GetCurrentWeapon());
     }
 
