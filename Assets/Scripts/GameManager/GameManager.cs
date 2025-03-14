@@ -107,6 +107,11 @@ public class GameManager : SingletonMonobehaviour<GameManager>
         return player;
     }
 
+    public Sprite GetPlayerMiniMapIcon()
+    {
+        return playerDetails.playerMiniMapIcon;
+    }
+
     public Room GetCurrentRoom()
     {
         return currentRoom;
