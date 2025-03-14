@@ -21,6 +21,12 @@ public class WeaponDetailsSO : ScriptableObject
     [Tooltip("Weapon current ammo")]
     public AmmoDetailsSO weaponCurrentAmmo;
 
+    [Tooltip("The firing sound effect SO for the weapon")]
+    public SoundEffectSO weaponFiringSoundEffect;
+
+    [Tooltip("The reloading sound effect SO for the weapon")]
+    public SoundEffectSO weaponReloadingSoundEffect;
+
     [Space(10)]
     [Header("WEAPON OPERATING VALUES")]
     [Tooltip("Select if the weapon has infinite ammo")]
