@@ -608,3 +608,16 @@ private IEnumerator ReloadWeaponRoutine(Weapon weapon, int topUpAmmoPercent)
 ```
 
 ### 미니맵 구현
+
+![Minimap](https://github.com/user-attachments/assets/3988c955-a980-4e96-b729-a7f69f553d6a)
+</br>
+던전을 구현할 때 화면에 출력되는 우선순위를 두고, 던전에 타입이 다른 타일을 통해 콜리전과 미니맵을 구현하기 위해  6개의 단면도를 쌓아서 만들었습니다.</br>
+각 계층은 다른 Tag와 Layer를 통해 게임 엔진에서 구분할 수 있게 했습니다.</br></br>
+
+
+![minimapex](https://github.com/user-attachments/assets/9be74328-55d2-42ac-b066-88ed98a6e43a)
+</br>
+플레이화면 좌상단에 미니맵을 출력하기 위해 미니맵만 찍어주는 카메라를 따로 두었습니다.</br>
+메인카메라가 아닌 미니맵용 카메라는 Culling Mask를 통해 미니맵 Layer만 촬영하도록 했으며, 메인카메라의 조명에 비춰지지 않는 미니맵을 위해 Global Light 2D를 따로 생성해 미니맵 Layer를 적용했습니다.</br>
+찍은 미니맵을 게임 화면에 렌더링하기 위해 따로 Render Texture를 만들어 미니맵 카메라의 Output Texture에 적용해 화면에 출력하지 않고 Texture에 미니맵을 출력하도록 했습니다.</br>
+전체 화면을 출력하는 UI에 RawImage를 좌상단에 만들어 미니맵을 출력하는 Render Texture를 RawImage에 붙여 한 화면에 2개의 카메라가 출력하는 장면이 나오도록 했습니다.</br></br>
