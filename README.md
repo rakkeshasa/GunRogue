@@ -554,3 +554,57 @@ Pool은 Pool의 크기와 프리팹, 프리팹이 갖고 있는 컴포넌트의 
 오브젝트 풀을 생성한 다음 게임에서 필요할 때마다 프리팹의 ID를 통해 큐에 접근하고 하나씩 추출해 게임 오브젝트를 활성화시켰습니다.</BR>
 
 ### 격발 및 재장전
+플레이어가 사격 버튼을 누르면 이벤트 클래스의 델리게이트를 호출하고 델리게이트를 구독한 사격 관련 함수가 실행됩니다.</br>
+사격 관련 함수는 연사 속도, 남은 총알 수와 같은 사격 제한 조건을 확인하고 총알이 나가도록 합니다.</br>
+
+```
+private IEnumerator FireAmmoRoutine(AmmoDetailsSO currentAmmo, float aimAngle, float weaponAimAngle, Vector3 weaponAimDirectionVector)
+{
+    int ammoPerShot = Random.Range(currentAmmo.ammoSpawnAmountMin, currentAmmo.ammoSpawnAmountMax + 1);
+
+    if (ammoPerShot > 1)
+        ammoSpawnInterval = Random.Range(currentAmmo.ammoSpawnIntervalMin, currentAmmo.ammoSpawnIntervalMax);
+    else
+        ammoSpawnInterval = 0f;
+
+    while (ammoCounter < ammoPerShot)
+    {
+        ammoCounter++;
+        GameObject ammoPrefab = currentAmmo.ammoPrefabArray[Random.Range(0, currentAmmo.ammoPrefabArray.Length)];
+        float ammoSpeed = Random.Range(currentAmmo.ammoSpeedMin, currentAmmo.ammoSpeedMax);
+        IFireable ammo = (IFireable)PoolManager.Instance.ReuseComponent(ammoPrefab, activeWeapon.GetShootPosition(), Quaternion.identity);
+        ammo.InitialiseAmmo(currentAmmo, aimAngle, weaponAimAngle, ammoSpeed, weaponAimDirectionVector);
+
+        yield return new WaitForSeconds(ammoSpawnInterval);
+    }
+
+    ReduceAmmo();
+}
+```
+샷건처럼 여러개의 탄환이 다양한 각도로 퍼지는 것을 구현하기 위해 코루틴으로 구현했습니다.</br>
+1개의 탄환이 나가는 총은 while문을 바로 빠져나가 남은 총알을 감소시키지만 샷건의 경우 while문을 돌면서 코루틴을 실행합니다.</br>
+탄환마다 다른 속도와 다른 각도를 적용해 탄이 사방으로 퍼지는 샷건을 구현했습니다.</br></br>
+
+```
+private IEnumerator ReloadWeaponRoutine(Weapon weapon, int topUpAmmoPercent)
+{
+    yield return new WaitForSeconds(weapon.weaponDetails.weaponReloadTime);
+
+    if (topUpAmmoPercent != 0)
+    {
+        int ammoIncrease = Mathf.RoundToInt((weapon.weaponDetails.weaponAmmoCapacity * topUpAmmoPercent) / 100f);
+        int totalAmmo = weapon.weaponRemainingAmmo + ammoIncrease;
+        weapon.weaponRemainingAmmo = Mathf.Clamp(totalAmmo, 0, weapon.weaponDetails.weaponAmmoCapacity);
+    }
+
+    if (weapon.weaponRemainingAmmo >= weapon.weaponDetails.weaponClipAmmoCapacity)
+        weapon.weaponClipRemainingAmmo = weapon.weaponDetails.weaponClipAmmoCapacity;
+    else
+        weapon.weaponClipRemainingAmmo = weapon.weaponRemainingAmmo;
+
+    weapon.weaponReloadTimer = 0f;
+    weapon.isWeaponReloading = false;
+}
+```
+
+### 미니맵 구현
