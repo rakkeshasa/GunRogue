@@ -29,12 +29,10 @@ public class AmmoDetailsSO : ScriptableObject
     [Tooltip("If the ammo has a charge time then specify what material should be used to render the ammo while charging")]
     public Material ammoChargeMaterial;
 
-
-    /*[Space(10)]
+    [Space(10)]
     [Header("AMMO HIT EFFECT")]
     [Tooltip("The scriptable object that defines the parameters for the hit effect prefab")]
-    public AmmoHitEffectSO ammoHitEffect;*/
-
+    public AmmoHitEffectSO ammoHitEffect;
 
     [Space(10)]
     [Header("AMMO BASE PARAMETERS")]
