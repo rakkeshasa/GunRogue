@@ -621,3 +621,96 @@ private IEnumerator ReloadWeaponRoutine(Weapon weapon, int topUpAmmoPercent)
 메인카메라가 아닌 미니맵용 카메라는 Culling Mask를 통해 미니맵 Layer만 촬영하도록 했으며, 메인카메라의 조명에 비춰지지 않는 미니맵을 위해 Global Light 2D를 따로 생성해 미니맵 Layer를 적용했습니다.</br>
 찍은 미니맵을 게임 화면에 렌더링하기 위해 따로 Render Texture를 만들어 미니맵 카메라의 Output Texture에 적용해 화면에 출력하지 않고 Texture에 미니맵을 출력하도록 했습니다.</br>
 전체 화면을 출력하는 UI에 RawImage를 좌상단에 만들어 미니맵을 출력하는 Render Texture를 RawImage에 붙여 한 화면에 2개의 카메라가 출력하는 장면이 나오도록 했습니다.</br></br>
+
+### A* 알고리즘
+몬스터 이동 기능에는 A* 알고리즘을 적용했습니다.</br>
+Node 클래스를 만들어 현재 좌표와 출발지부터의 비용, 도착지까지의 비용, 부모 노드의 정보를 관리하도록 했습니다.</br>
+IComparable 인터페이스를 상속시켜 총 비용을 비교해 대소를 구분하여 A*에 사용할 최소 노드를 찾는데 사용했습니다.</BR></BR>
+
+```
+private static Node FindShortestPath(Node startNode, Node targetNode, GridNodes gridNodes, List<Node> openNodeList, HashSet<Node> closedNodeSet, InstantiatedRoom room)
+{
+    openNodeList.Add(startNode);
+
+    while (openNodeList.Count > 0)
+    {
+        Node currentNode = openNodeList.Min();
+        int currentNodeIdx = openNodeList.IndexOf(currentNode);
+        openNodeList.RemoveAt(currentNodeIdx);
+
+        if (currentNode == targetNode)
+            return currentNode;
+
+        closedNodeSet.Add(currentNode);
+        CheckNearNodes(currentNode, targetNode, gridNodes, openNodeList, closedNodeSet, room);
+    }
+
+    return null;
+}
+```
+우선 후보 노드들을 리스트에 담고 리스트의 요소인 노드들 중에 두 비용의 합이 제일 작은 것을 선택합니다.</BR>
+처음에는 sort를 이용해 최소 비용 노드를 선택했지만, 정렬을 하지 않고 최소 비용 노드만 갖고오도록 min함수를 이용해 시간 복잡도를 nlogn에서 n까지 낮췄습니다.</br>
+추출한 노드가 도착지라면 빠져나오고 아니라면 방문했다는 표시를 하기 위해 Set에 담아 관리했으며 대각선까지 포함한 8방향의 근처 노드를 탐색해 리스트에 담습니다.</br></br>
+
+
+```
+private static void CheckNearNodes(Node currentNode, Node targetNode, GridNodes gridNodes, List<Node> openNodeList, HashSet<Node> closedNodeSet, InstantiatedRoom room)
+{
+    for(int i = -1; i <= 1; i++)
+    {
+        for(int j = -1; j <= 1; j++)
+        {
+            if (i == 0 && j == 0)
+                continue;
+
+            Node nearNode = GetValidNearNode(currentNodePos.x + i, currentNodePos.y + j, gridNodes, closedNodeSet, room);
+            if(nearNode != null)
+            {
+                int penaltyCost = room.aStarMovementPenalty[nearNode.gridPosition.x, nearNode.gridPosition.y];
+                int newCost = currentNode.gCost + GetDistance(currentNode, nearNode) + penaltyCost;
+                bool isValidInOpenList = openNodeList.Contains(nearNode);
+
+                if(newCost < nearNode.gCost || !isValidInOpenList)
+                {
+                    nearNode.gCost = newCost;
+                    nearNode.hCost = GetDistance(nearNode, targetNode);
+                    nearNode.parentNode = currentNode;
+
+                    if(!isValidInOpenList)
+                    {
+                        openNodeList.Add(nearNode);
+                    }
+                }
+            }
+        }
+    }
+}
+```
+근처 노드를 탐색하고 비용을 계산하는 함수로, 던전에는 몬스터가 벽에 너무 가깝게 붙는 것을 방지하기 위해 선호 경로를 미리 지정했습니다.</br></br>
+![tilemapcost](https://github.com/user-attachments/assets/705bb4be-7163-4b08-914f-43ca0ac59102)
+</br>
+벽이나 장애물이라면 0의 비용을 주고, 선호되는 경로에는 1, 비선호 경로에는 40의 비용을 부과하여 x, y좌표에 따른 2차원 배열로 관리했습니다.</br>
+탐색한 노드의 비용이 0이라면 갈 수 없는 노드이므로 nearNode에는 null값이 담겨 다음 좌표의 노드를 탐색합니다.</br>
+탐색한 노드가 비선호 경로라면 추가적으로 40의 비용이 붙어 해당 경로를 반드시 통과하는 경우가 아니라면 선호 경로로 우회하도록 했습니다.</br></br>
+
+![preferredDiff](https://github.com/user-attachments/assets/e1a9e29d-d857-47c8-8e51-c641a992f50d)
+</br></br>
+
+```
+private static Stack<Vector3> CreatePathStack(Node targetNode, Room room)
+{
+    Stack<Vector3> pathStack = new Stack<Vector3>();
+    Node nextNode = targetNode; // 마지막 자식 노드(도착지)
+
+    while(nextNode != null)
+    {
+        int nodeWorldPosX = nextNode.gridPosition.x + room.templateLowerBounds.x;
+        int nodeWorldPosY = nextNode.gridPosition.y + room.templateLowerBounds.y;
+        
+        pathStack.Push(worldPos);
+        nextNode = nextNode.parentNode;
+    }
+    return pathStack;
+}
+```
+도착지까지 탐색이 완료된 노드를 스택에 담아 시작점부터 도착지까지의 순서대로 노드가 정렬되도록 했습니다.</br>
