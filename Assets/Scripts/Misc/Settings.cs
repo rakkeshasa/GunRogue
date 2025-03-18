@@ -47,6 +47,10 @@ public class Settings
     // 발사 위치도 무기가 아닌 플레이어를 기준으로 나가게 함
     public const float useAimAngleDistance = 3.5f;
 
+    // A스타 알고리즘 관련
+    public const int defaultPathPenalty = 40;
+    public const int preferredPathPenalty = 1;
+
     // UI 전용
     public const float uiAmmoIconSpacing = 4f;
 }
